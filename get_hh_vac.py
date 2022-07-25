@@ -13,6 +13,7 @@ def get_vacancies_from_hh(requirements, output_file_name):
     DOMAIN = 'https://api.hh.ru/vacancies/'
     vacancy_filter = {'text': requirements,
                       'area': '1',   # Москва
+                      'only_with_salary': 'true',
                       'page': '0'
                       }
 
@@ -52,7 +53,7 @@ def get_vacancies_from_hh(requirements, output_file_name):
 
     # Сохранение в файл
     with open(output_file_name, 'w') as f:
-        json.dump(vacancy_list, f)
+        json.dump(vacancy_list, f, ensure_ascii=False)
 
     return vacancy_list
 
