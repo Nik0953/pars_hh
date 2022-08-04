@@ -1,6 +1,6 @@
 import requests
 import json
-import time
+
 
 def get_vacancies_for_telega(requirements, output_file_name):
     """
@@ -15,7 +15,7 @@ def get_vacancies_for_telega(requirements, output_file_name):
     DOMAIN = 'https://api.hh.ru/vacancies/'
     vacancy_filter = {'text': requirements,
                       'area': '1',   # Москва
-                      #'only_with_salary': 'true',
+                      # 'only_with_salary': 'true',
                       'period': '1',
                       'page': '0'
                       }
@@ -77,8 +77,10 @@ def get_top_vacancy(vacancy_list):
     for vac in vacancy_list:
         if 'salary' in vac:
             try:
-                top_salary = int(vac['salary']['to'])
-                top_vac = vac
+                sal = int(vac['salary']['to'])
+                if sal > top_salary:
+                    top_salary = sal
+                    top_vac = vac
             except:
                 vac['salary'] = {'to': '?', 'currency': 'RUB'}
         else:
@@ -109,10 +111,3 @@ def get_top_vacancy(vacancy_list):
     f.close()
 
     return vac_txt
-
-
-
-
-if __name__ == '__main__':
-    vac_lst = get_vacancies_for_telega('провизор технолог', 'vac_for_telega.json')
-    print(get_top_vacancy(vac_lst))
