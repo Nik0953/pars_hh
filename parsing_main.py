@@ -1,12 +1,13 @@
 """
 Парсинг вакансий (hh api)
+Основной модуль
 
 """
 
 import os
-from pycbrf import ExchangeRates
 from get_hh_vac import *
 from txt_modules import *
+from vacancy_analysis import *
 
 """
 получаем исходный текст для обработки
@@ -26,42 +27,16 @@ else:
 парсинг исходного текста 
 """
 
+# оставляем только вакансии с заполненными полями
+# требований и заработной платы
+# также получаем в один текст txt_book все требования к должности
+vac_list_perfect, txt_book = vacancy_selection(vac_list)
 
-# курсы валют
-rate = ExchangeRates()
+# общая информация об отобранных вакансиях:
+vac_total, zarplata_total = vacancy_stat(vac_list_perfect, '')
 
-# полный текст для словаря с частотностью
-txt_book = ''
-
-# нам нужны вакансии с заполненными полями максимальной заработной платы и требований к кандидату
-vac_list_perfect = []
-
-for vac in vac_list:
-    if vac['salary']:
-        if vac['salary']['to']:
-            if vac['salary']['currency']:
-                if vac['snippet']:
-                    if vac['snippet']['requirement']:
-                        # нужные поля у этой вакансии заполнены
-                        # заработную плату - в рубли
-                        cur = str(vac['salary']['currency']).strip()
-                        r = 1
-                        if cur == 'BYN':
-                            r = rate['BYN'].value
-                        elif cur == 'USD':
-                            r = rate['USD'].value
-                        elif cur == 'EUR':
-                            r = rate['EUR'].value
-
-                        vac['zarplata_rub'] = r * vac['salary']['to']
-
-                        # дополняем текст для общего словаря
-                        txt_book += ' ' + vac['snippet']['requirement']
-                        # добавляем вакансию в "чистый" список
-                        vac_list_perfect.append(vac)
-
-
-print('Всего вакансий:', len(vac_list), '  Отобрано полных вакансий:', len(vac_list_perfect))
+print('Всего вакансий:', len(vac_list))
+print('Отобрано полных вакансий:', vac_total, 'средняя заработная плата по ним:', int(zarplata_total/vac_total), 'руб.')
 
 # убрать из текста лишние символы
 txt_book = txt_improve(txt_book)
@@ -70,8 +45,6 @@ txt_book = txt_improve(txt_book)
 txt_lst = txt_book.split()
 # уникальные слова:
 txt_set = set(txt_lst)
-
-# подсчет числа слов:
 
 # создаем словарь с частотностью
 words_fr = dict.fromkeys(txt_set)
@@ -88,14 +61,13 @@ for word in words_fr:
 words_fr_sorted = {}
 sorted_keys = sorted(words_fr, key=words_fr.get, reverse=True)
 
-for w in sorted_keys:
-    words_fr_sorted[w] = words_fr[w]
+for word in sorted_keys:
+    words_fr_sorted[word] = words_fr[word]
 
 """
 Диалог с пользователем 
 для определения целевых слов
 """
-
 
 # печатаем первые элементы
 print('*'*20, '   Чаще всего в акетах встречаются слова:   ', '*'*20)
@@ -107,6 +79,10 @@ while word_for_research:
     word_for_research = input('Пожалуйста, введите интересующее слово для анализа [или Enter для завершения]: ')
     if word_for_research in words_fr_sorted:
         print('Анализ анкет, содержащих в требованиях слово \"', word_for_research, '\":', sep='')
+        vac_req, zarpl_req = vacancy_stat(vac_list_perfect, word_for_research)
+        print('Всего вакансий:', vac_req)
+        if vac_req:
+            print('Средний предел оплаты', int(zarpl_req / vac_req), 'руб, это', int(100*vac_req/len(vac_list_perfect)), '% вакансий от общего числа')
     else:
         if word_for_research:
             print('Ошибка, такого слова в тексте нет.')
