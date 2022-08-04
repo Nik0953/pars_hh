@@ -37,11 +37,17 @@ def find(message):
         #  получаем список всех вакансий
         vac_lst = get_vacancies_for_telega(text_key, 'vac_for_telega.json')
         #  отправляем в чат лучшую
-        bot.reply_to(message, get_top_vacancy(vac_lst))
+        if vac_lst:
+            txt_top_vac = get_top_vacancy(vac_lst)
+        else:
+            txt_top_vac = 'Вакансий новых не найдено'
+
+        bot.reply_to(message, txt_top_vac)
 
         # отправляем в чат список всех вакансий в файле
-        with open('vac.txt', 'r', encoding='utf-8') as data:
-            bot.send_document(message.chat.id, data)
+        if vac_lst:
+            with open('vac.txt', 'r', encoding='utf-8') as data:
+                bot.send_document(message.chat.id, data)
 
 @bot.message_handler(content_types=['text'])
 def thanks_txt(message):
